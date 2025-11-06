@@ -279,40 +279,35 @@ def process_single_file(file_path, assignment_log_data, verbose=False):
 
 def create_scatter_plot(plot_data, category, color, output_path):
     """
-    יצירת גרף נקודות עבור קטגוריה מסוימת
+    creat a scatter plot of data
     """
     plt.figure(figsize=(14, 6))
 
-    # הפרדת נקודות לפי סף 60%
     below_60 = plot_data[plot_data[f'percentage_{category}'] < 60]
     above_60 = plot_data[plot_data[f'percentage_{category}'] >= 60]
 
-    # שרטוט נקודות מעל 60% בצבע הרגיל
     plt.scatter(above_60['subject'], above_60[f'percentage_{category}'],
                 alpha=0.7, s=100, c=color, edgecolors='black', linewidth=1,
                 label=f'{category} ≥ 60%')
 
-    # שרטוט נקודות מתחת ל-60% בצבע אדום
     plt.scatter(below_60['subject'], below_60[f'percentage_{category}'],
                 alpha=0.7, s=100, c='red', edgecolors='black', linewidth=1,
                 label=f'{category} < 60%')
 
-    # הוספת קו ממוצע
     mean_val = plot_data[f'percentage_{category}'].mean()
     plt.axhline(y=mean_val, color='darkred', linestyle='--', linewidth=2,
                 label=f'Average: {mean_val:.1f}%')
 
-    # הוספת קו ייחוס ב-60%
     plt.axhline(y=60, color='red', linestyle=':', linewidth=1.5, alpha=0.5,
                 label='60% threshold')
 
-    # סימון על ציר X עבור ערכים מתחת ל-60%
+    # marked X below 60%
     for idx, row in below_60.iterrows():
         plt.axvline(x=row['subject'], color='red', alpha=0.2, linestyle='-', linewidth=2)
         plt.text(row['subject'], 2, f"{row['subject']}",
                  ha='center', va='bottom', fontsize=8, color='red', fontweight='bold')
 
-    # עיצוב הגרף
+    #design graph
     plt.xlabel('Subject Number', fontsize=12, fontweight='bold')
     plt.ylabel(f'Success Rate - {category} (%)', fontsize=12, fontweight='bold')
     plt.title(f'Category {category}: Success Rate by Subject', fontsize=14, fontweight='bold')
@@ -320,7 +315,7 @@ def create_scatter_plot(plot_data, category, color, output_path):
     plt.ylim(0, 105)
     plt.legend(fontsize=10)
 
-    # הוספת ערכים על הנקודות (אם יש לא יותר מדי נקודות)
+    # add values on dots
     if len(plot_data) <= 40:
         for idx, row in plot_data.iterrows():
             plt.annotate(f"{row[f'percentage_{category}']:.0f}%",
@@ -481,7 +476,7 @@ def create_histogram(plot_data, output_path):
     min_val = int(success_rates.min() // 5) * 5
     max_val = 100
 
-    bins = range(min_val, max_val + 6, 5)  # +6 כדי לוודא שמגיעים עד 100
+    bins = range(min_val, max_val + 6, 5)
 
     mean_val = success_rates.mean()
 
@@ -504,7 +499,7 @@ def create_histogram(plot_data, output_path):
 
     plt.xlabel('Success Rate (%)', fontsize=14, fontweight='bold')
     plt.ylabel('Number of Students', fontsize=14, fontweight='bold')
-    plt.title('Distribution of Overall Success Rate - Classroom\n(5% intervals)',
+    plt.title('Distribution of Overall Success Rate - Cafe\n(5% intervals)',
               fontsize=16, fontweight='bold', pad=20)
     plt.grid(True, alpha=0.3, linestyle='--', axis='y')
     plt.legend(fontsize=12, loc='upper left')
@@ -804,6 +799,9 @@ def create_overall_comparison_chart(cafe_data, classroom_data, output_path):
     print(f"\nDifference: {difference:.2f}% (favoring {better_env})")
     print(f"{'=' * 80}\n")
 
+
+
+
 def main():
     # reading assignment_log for all data
     assignment_log_path = r"C:\Users\peleg\Desktop\Lub\assignment_log_cafe.csv"
@@ -828,6 +826,7 @@ def main():
 
     all_results = []
     failed_files = []
+    base_path = r"C:\Users\peleg\Desktop\Lub\cafe_graf"
 
     for i, file_path in enumerate(answer_files, 1):
         result, error_msg = process_single_file(file_path, assignment_log_data, verbose=False)
@@ -853,13 +852,23 @@ def main():
             print(f"Average M: {cafe_only['percentage_M'].mean():.1f}%")
             print(f"Overall: {cafe_only['overall_percentage'].mean():.1f}%")
 
-            plot_data = results_df.sort_values('subject')
-
+            plot_data = cafe_only.sort_values('subject')
             print(f"\n{'=' * 80}")
             print(f"Creating scatter plots for all categories...")
             print(f"{'=' * 80}")
 
-            base_path = r"C:\Users\peleg\Desktop\Lub\cafe_graf"
+            # create separated graph for each category
+            create_scatter_plot(plot_data, 'R', 'blue',
+                                f"{base_path}\\R_category_Cafe_scatter_plot.png")
+
+            create_scatter_plot(plot_data, 'IR', 'green',
+                                f"{base_path}\\IR_category_Cafe_scatter_plot.png")
+
+            create_scatter_plot(plot_data, 'M', 'orange',
+                                f"{base_path}\\M_category_Cafe_scatter_plot.png")
+
+            create_combined_plot(plot_data, f"{base_path}\\Combined_categories_plot.png")
+            create_histogram(plot_data, f"{base_path}\\histogram_overall_success_Cafe.png")
 
 
 
@@ -880,8 +889,7 @@ def main():
 
                 create_comparison_bar_chart( cafe_only, classroom_data,f"{base_path}\\comparison_cafe_vs_classroom.png")
             else:
-                print("⚠ Skipping comparison chart - missing data")
-                # גרף השוואה כללי חדש
+                print("Skipping comparison chart - missing data")
                 print(f"\n{'=' * 80}")
                 print(f"Creating overall comparison chart...")
                 print(f"{'=' * 80}")

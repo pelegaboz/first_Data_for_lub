@@ -603,7 +603,7 @@ def main():
 
             # create bar graph
             create_bar_chart(plot_data, f"{base_path}\\bar_chart_categories_Classroom.png")
-            create_histogram(plot_data, f"{base_path}\\histogram_overall_success_Classroom.png")  # שורה חדשה
+            create_histogram(plot_data, f"{base_path}\\histogram_overall_success_Classroom.png")
 
 
 if __name__ == "__main__":
