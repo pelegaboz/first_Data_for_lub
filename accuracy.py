@@ -8,6 +8,10 @@ from scipy import stats
 from pathlib import Path
 from typing import Tuple, Optional, Dict
 
+classroom_output_path = r"C:\Users\peleg\Desktop\Analysis_Code\Output_Results\accuracy\results_output_for_accuracy_Classroom.xlsx"
+cafe_output_path = r"C:\Users\peleg\Desktop\Analysis_Code\Output_Results\accuracy\results_output_for_accuracy_Cafe.xlsx"    
+output_path = r"C:\Users\peleg\Desktop\Lub\comparison_cafe_vs_classroom.png"
+stats_output_path = r"C:\Users\peleg\Desktop\Analysis_Code\Output_Results\accuracy\results_output_for_accuracy_all.xlsx"
 
 # CONSTANTS
 ADHD = 0
@@ -108,38 +112,6 @@ def parse_condition_sequence(condition_str: str) -> tuple:
 
     return tuple(conditions)
 
-def load_condition_mapping(condition_file_path: str) -> dict:
-    # Loading CSV that maps the conditions of trial to subject
-    if not os.path.exists(condition_file_path):
-        print(f"ERROR: File does not exist: {condition_file_path}")
-        return {}
-
-    try:
-        condition_df = pd.read_csv(condition_file_path)
-    except Exception as e:
-        print(f"✗ ERROR loading file: {e}")
-        return {}
-
-    required_columns = ['Subject', 'Session', 'Condition']
-    missing_columns = [col for col in required_columns if col not in condition_df.columns]
-
-    if missing_columns:
-        print(f" ERROR: Missing columns: {missing_columns}")
-        return {}
-
-    condition_df = condition_df.dropna(subset=['Subject', 'Session', 'Condition'])
-
-    # Build dictionary mapping (subject, session) to condition string
-    condition_map = {}
-    for _, row in condition_df.iterrows():
-        try:
-            key = (int(row['Subject']), int(row['Session']))
-            condition_map[key] = str(row['Condition']).strip()
-        except (ValueError, TypeError):
-            continue
-
-    print(f"✓ Loaded {len(condition_map)} condition mappings")
-    return condition_map
 
 
 def identify_condition_for_trial(condition_str: str, trial_id: int) -> str:
@@ -254,7 +226,7 @@ def calculate_avg_accuracy_for_condition(filtered_df: pd.DataFrame,
     return pd.DataFrame(all_results)
 
 def results_for_one_env(which_envi: str) -> pd.DataFrame:
-    # Process and return results for a specific environment (cafe or classroom)
+    #Process and return results for a specific environment (cafe or classroom)
     results = []
 
     # Select the correct condition file based on environment
@@ -331,7 +303,385 @@ def results_for_one_env(which_envi: str) -> pd.DataFrame:
     print(f"✓ Processed {files_processed} entries from {which_envi}")
     return df
 
+def independent_ttest_adhd_vs_control(df, environment):
+#returning the results of indipendent t-test
+    env_data = df[df['Environment'] == environment.upper()].copy()
+
+    if env_data.empty:
+        print(f" No data found for environment: {environment}")
+        return None
+
+    subject_avg = env_data.groupby(['Subject', 'Group'])['Accuracy'].mean().reset_index()
+
+    adhd_group = subject_avg[subject_avg['Group'] == ADHD]['Accuracy']
+    control_group = subject_avg[subject_avg['Group'] == Control]['Accuracy']
+
+    n_adhd = len(adhd_group)
+    n_control = len(control_group)
+    print(f"Number of ADHD subjects: {n_adhd}")
+    print(f"Number of Control subjects: {n_control}")
+
+    adhd_mean = adhd_group.mean()
+    adhd_std = adhd_group.std()
+    control_mean = control_group.mean()
+    control_std = control_group.std()
+
+    t_statistic, p_value = stats.ttest_ind(adhd_group, control_group, equal_var=True)
+
+    pooled_std = np.sqrt(((n_adhd - 1) * adhd_std ** 2 + (n_control - 1) * control_std ** 2) /
+                         (n_adhd + n_control - 2))
+    cohens_d = (adhd_mean - control_mean) / pooled_std
+
+    print(f"INDEPENDENT T-TEST: ADHD vs CONTROL ({environment.upper()})")
+    print(f"\n{'ADHD GROUP':-^80}")
+    print(f"  n = {n_adhd}")
+    print(f"  Mean = {adhd_mean:.4f}%")
+    print(f"  SD = {adhd_std:.4f}")
+    print(f"  Variance = {adhd_std ** 2:.4f}")
+
+    print(f"\n{'CONTROL GROUP':-^80}")
+    print(f"  n = {n_control}")
+    print(f"  Mean = {control_mean:.4f}%")
+    print(f"  SD = {control_std:.4f}")
+    print(f"  Variance = {control_std ** 2:.4f}")
+
+    print(f"\n{'TEST RESULTS':-^80}")
+    print(f"  t-statistic = {t_statistic:.4f}")
+    print(f"  p-value = {p_value:.4f}")
+    print(f"  degrees of freedom = {n_adhd + n_control - 2}")
+    print(f"  Mean difference = {abs(adhd_mean - control_mean):.4f}%")
+
+    if p_value < 0.001:
+        significance = "*** (p < 0.001) - Highly significant!"
+    elif p_value < 0.01:
+        significance = "** (p < 0.01) - Very significant!"
+    elif p_value < 0.05:
+        significance = "* (p < 0.05) - Significant!"
+    else:
+        significance = "n.s. (p >= 0.05) - Not significant"
+
+    print(f"  Significance: {significance}")
+
+    print(f"\n{'EFFECT SIZE (Cohen d)':-^80}")
+    print(f"  Cohen's d = {cohens_d:.4f}")
+
+    if abs(cohens_d) < 0.2:
+        effect_interpretation = "Negligible effect"
+    elif abs(cohens_d) < 0.5:
+        effect_interpretation = "Small effect"
+    elif abs(cohens_d) < 0.8:
+        effect_interpretation = "Medium effect"
+    else:
+        effect_interpretation = "Large effect"
+
+    print(f"  Interpretation: {effect_interpretation}")
+
+    print(f"\n{'CONCLUSION':-^80}")
+
+    return {
+        'environment': environment,
+        'adhd_n': n_adhd,
+        'adhd_mean': adhd_mean,
+        'adhd_std': adhd_std,
+        'control_n': n_control,
+        'control_mean': control_mean,
+        'control_std': control_std,
+        't_statistic': t_statistic,
+        'p_value': p_value,
+        'df': n_adhd + n_control - 2,
+        'cohens_d': cohens_d,
+        'significant': p_value < 0.05
+    }
+
+    """Calculate standard deviation per subject from raw trial data"""
+    all_results = []
+    metadata = load_metadata_files(CAFE_DATA_PATH, CLASSROOM_DATA_PATH)
+    
+    cafe_condition_map = load_condition_mapping(CAFE_DATA_PATH)
+    classroom_condition_map = load_condition_mapping(CLASSROOM_DATA_PATH)
+    
+    xlsx_files = glob.glob(os.path.join(DATA_PATH, '*.xlsx'))
+    csv_files = glob.glob(os.path.join(DATA_PATH, '*.csv'))
+    all_files = xlsx_files + csv_files
+    
+    print("\n" + "="*80)
+    print("CALCULATING SD AND MEDIAN FROM RAW TRIAL DATA")
+    print("="*80)
+    
+    for file in all_files:
+        subject_number = extract_subject_number(file)
+        session = test_or_retest(file)
+        environment = identify_envi(subject_number, session, metadata)
+        
+        if environment is None:
+            continue
+        
+        if environment == "CAFE":
+            condition_map = cafe_condition_map
+        else:
+            condition_map = classroom_condition_map
+        
+        condition_str = condition_map.get((subject_number, session))
+        if condition_str is None:
+            continue
+        
+        raw_df = load_file(file)
+        if raw_df is None:
+            continue
+        
+        filtered_df = fillterd_data_frame_for_intrest(raw_df)
+        if filtered_df.empty:
+            continue
+        
+        print(f"Processing Subject {subject_number}, Session {session}, Environment {environment}")
+        
+        for condition_type in ['R', 'IR', 'M']:
+            condition_trials = []
+            condition_values = []
+            
+            for trial_id in range(1, 31):
+                trial_condition = identify_condition_for_trial(condition_str, trial_id)
+                if trial_condition == condition_type:
+                    level = intrest_level_for_one_quastion(trial_id, filtered_df)
+                    if level is not None and level > 0:
+                        condition_trials.append(trial_id)
+                        condition_values.append(level)
+            
+            if len(condition_values) > 0:
+                mean_val = np.mean(condition_values)
+                median_val = np.median(condition_values)
+                std_val = np.std(condition_values, ddof=1) if len(condition_values) > 1 else 0.0
+                
+                all_results.append({
+                    'Subject': subject_number,
+                    'Session': session,
+                    'Environment': environment,
+                    'Condition': condition_type,
+                    'Mean': mean_val,
+                    'Median': median_val,
+                    'SD': std_val,
+                    'N_Trials': len(condition_values),
+                })
+        
+        # Overall statistics
+        all_values = []
+        for trial_id in range(1, 31):
+            level = intrest_level_for_one_quastion(trial_id, filtered_df)
+            if level is not None and level > 0:
+                all_values.append(level)
+        
+        if len(all_values) > 0:
+            all_results.append({
+                'Subject': subject_number,
+                'Session': session,
+                'Environment': environment,
+                'Condition': 'Overall',
+                'Mean': np.mean(all_values),
+                'Median': np.median(all_values),
+                'SD': np.std(all_values, ddof=1) if len(all_values) > 1 else 0.0,
+                'N_Trials': len(all_values),
+            })
+    
+    results_df = pd.DataFrame(all_results)
+    
+    # Sort results
+    condition_order = {'Overall': 0, 'R': 1, 'IR': 2, 'M': 3}
+    results_df['Condition_Order'] = results_df['Condition'].map(condition_order)
+    results_df = results_df.sort_values(['Subject', 'Session', 'Environment', 'Condition_Order'])
+    results_df = results_df.drop('Condition_Order', axis=1)
+    
+    # Round values
+    results_df['Mean'] = results_df['Mean'].round(4)
+    results_df['Median'] = results_df['Median'].round(4)
+    results_df['SD'] = results_df['SD'].round(4)
+    
+    results_df.to_excel(output_path, index=False)
+    # print(f"\n✓ Results saved to: {output_path}")
+    print(f"Total rows: {len(results_df)}")
+    
+    return results_df
+
+def calculate_std_per_subject_from_raw_data(output_path: str):
+    """Calculate standard deviation per subject from raw trial data - FOR ACCURACY"""
+    all_results = []
+    metadata = load_metadata_files(CAFE_DATA_PATH, CLASSROOM_DATA_PATH)
+    
+    cafe_condition_map = load_condition_mapping(CAFE_DATA_PATH)
+    classroom_condition_map = load_condition_mapping(CLASSROOM_DATA_PATH)
+    
+    xlsx_files = glob.glob(os.path.join(DATA_PATH, '*.xlsx'))
+    csv_files = glob.glob(os.path.join(DATA_PATH, '*.csv'))
+    all_files = xlsx_files + csv_files
+    
+    print("\n" + "="*80)
+    print("CALCULATING SD AND MEDIAN FROM RAW TRIAL DATA - ACCURACY")
+    print("="*80)
+    
+    for file in all_files:
+        subject_number = extract_subject_number(file)
+        session = test_or_retest(file)
+        environment = identify_envi(subject_number, session, metadata)
+        
+        if environment is None:
+            continue
+        
+        if environment == "CAFE":
+            condition_map = cafe_condition_map
+        else:
+            condition_map = classroom_condition_map
+        
+        condition_str = condition_map.get((subject_number, session))
+        if condition_str is None:
+            continue
+        
+        raw_df = load_file(file)
+        if raw_df is None:
+            continue
+        
+
+        filtered_df = filtered_data_frame_for_accuracy(raw_df)
+        if filtered_df.empty:
+            continue
+        
+        print(f"Processing Subject {subject_number}, Session {session}, Environment {environment}")
+        
+        #calcultae for each trail
+        for condition_type in ['R', 'IR', 'M']:
+            condition_trials = []
+            condition_accuracies = []
+            
+        
+            for trial_id in range(1, 31):
+                trial_condition = identify_condition_for_trial(condition_str, trial_id)
+                if trial_condition == condition_type:
+                    # acuuracy calculate for trail
+                    trial_data = filtered_df[filtered_df['TrialID'] == trial_id]
+                    if len(trial_data) > 0:
+                        correct = trial_data[trial_data['SingleChoiceAccurate'] == True]
+                        accuracy = (len(correct) / len(trial_data)) * 100
+                        condition_trials.append(trial_id)
+                        condition_accuracies.append(accuracy)
+            
+            if len(condition_accuracies) > 0:
+                mean_val = np.mean(condition_accuracies)
+                median_val = np.median(condition_accuracies)
+                std_val = np.std(condition_accuracies, ddof=1) if len(condition_accuracies) > 1 else 0.0
+                
+                all_results.append({
+                    'Subject': subject_number,
+                    'Session': session,
+                    'Environment': environment,
+                    'Condition': condition_type,
+                    'Mean': mean_val,
+                    'Median': median_val,
+                    'SD': std_val,
+                    'N_Trials': len(condition_accuracies),
+                })
+        
+        # Overall statistics
+        all_accuracies = []
+        for trial_id in range(1, 31):
+            trial_data = filtered_df[filtered_df['TrialID'] == trial_id]
+            if len(trial_data) > 0:
+                correct = trial_data[trial_data['SingleChoiceAccurate'] == True]
+                accuracy = (len(correct) / len(trial_data)) * 100
+                all_accuracies.append(accuracy)
+        
+        if len(all_accuracies) > 0:
+            all_results.append({
+                'Subject': subject_number,
+                'Session': session,
+                'Environment': environment,
+                'Condition': 'Overall',
+                'Mean': np.mean(all_accuracies),
+                'Median': np.median(all_accuracies),
+                'SD': np.std(all_accuracies, ddof=1) if len(all_accuracies) > 1 else 0.0,
+                'N_Trials': len(all_accuracies),
+            })
+    
+    results_df = pd.DataFrame(all_results)
+    
+    # Sort results
+    condition_order = {'Overall': 0, 'R': 1, 'IR': 2, 'M': 3}
+    results_df['Condition_Order'] = results_df['Condition'].map(condition_order)
+    results_df = results_df.sort_values(['Subject', 'Session', 'Environment', 'Condition_Order'])
+    results_df = results_df.drop('Condition_Order', axis=1)
+    
+    # Round values
+    results_df['Mean'] = results_df['Mean'].round(4)
+    results_df['Median'] = results_df['Median'].round(4)
+    results_df['SD'] = results_df['SD'].round(4)
+    
+    results_df.to_excel(output_path, index=False)
+    print(f"\n✓ Results saved to: {output_path}")
+    print(f"Total rows: {len(results_df)}")
+    
+    return results_df
+
+def calculate_cv(mean, std):
+    # Calculate coefficient of variation (CV) as percentage
+    if mean == 0 or pd.isna(mean):
+        return 0.0
+    return (std / mean) * 100
+
+def main():
+        #  Cafe
+    cafe_df = results_for_one_env("cafe")
+    cafe_df.to_excel(cafe_output_path, index=False)
+#  Classroom
+    classroom_df = results_for_one_env("classroom")
+    classroom_df.to_excel(classroom_output_path, index=False)
+
+#combined
+    combiend_df= pd.concat([cafe_df, classroom_df],ignore_index=True)
+    stats_df = calculate_std_per_subject_from_raw_data(stats_output_path)
+    #create_overall_comparison_chart(cafe_df, classroom_df,output_path)
+
+
+if __name__== "__main__":
+    main()
+
+
+"""
+
+
+
 # VISUALIZATION FUNCTIONS
+
+def load_condition_mapping(condition_file_path: str) -> dict:
+    # Loading CSV that maps the conditions of trial to subject
+    if not os.path.exists(condition_file_path):
+        print(f"ERROR: File does not exist: {condition_file_path}")
+        return {}
+
+    try:
+        condition_df = pd.read_csv(condition_file_path)
+    except Exception as e:
+        print(f"✗ ERROR loading file: {e}")
+        return {}
+
+    required_columns = ['Subject', 'Session', 'Condition']
+    missing_columns = [col for col in required_columns if col not in condition_df.columns]
+
+    if missing_columns:
+        print(f" ERROR: Missing columns: {missing_columns}")
+        return {}
+
+    condition_df = condition_df.dropna(subset=['Subject', 'Session', 'Condition'])
+
+    # Build dictionary mapping (subject, session) to condition string
+    condition_map = {}
+    for _, row in condition_df.iterrows():
+        try:
+            key = (int(row['Subject']), int(row['Session']))
+            condition_map[key] = str(row['Condition']).strip()
+        except (ValueError, TypeError):
+            continue
+
+    print(f"✓ Loaded {len(condition_map)} condition mappings")
+    return condition_map
+
+
 
 def slope_bar_accuracy(df: pd.DataFrame):
     # Create slope graph showing accuracy change between cafe and classroom for each subject
@@ -659,11 +1009,6 @@ def histogram_accuracy_by_environment(df: pd.DataFrame):
 
     print(f"✓ Histogram saved to: {save_path}")
 
-def calculate_cv(mean, std):
-    # Calculate coefficient of variation (CV) as percentage
-    if mean == 0 or pd.isna(mean):
-        return 0.0
-    return (std / mean) * 100
 def create_overall_comparison_chart(cafe_data, classroom_data, output_path):
     #cafe
     cafe_per_subject_session = cafe_data.groupby(['Subject', 'Session'])['Accuracy'].mean().reset_index()
@@ -749,338 +1094,4 @@ def create_overall_comparison_chart(cafe_data, classroom_data, output_path):
     print(f"✓ Overall accuracy comparison chart saved to: {output_path}")
     plt.show()
 
-def independent_ttest_adhd_vs_control(df, environment):
-#returning the results of indipendent t-test
-    env_data = df[df['Environment'] == environment.upper()].copy()
-
-    if env_data.empty:
-        print(f" No data found for environment: {environment}")
-        return None
-
-    subject_avg = env_data.groupby(['Subject', 'Group'])['Accuracy'].mean().reset_index()
-
-    adhd_group = subject_avg[subject_avg['Group'] == ADHD]['Accuracy']
-    control_group = subject_avg[subject_avg['Group'] == Control]['Accuracy']
-
-    n_adhd = len(adhd_group)
-    n_control = len(control_group)
-    print(f"Number of ADHD subjects: {n_adhd}")
-    print(f"Number of Control subjects: {n_control}")
-
-    adhd_mean = adhd_group.mean()
-    adhd_std = adhd_group.std()
-    control_mean = control_group.mean()
-    control_std = control_group.std()
-
-    t_statistic, p_value = stats.ttest_ind(adhd_group, control_group, equal_var=True)
-
-    pooled_std = np.sqrt(((n_adhd - 1) * adhd_std ** 2 + (n_control - 1) * control_std ** 2) /
-                         (n_adhd + n_control - 2))
-    cohens_d = (adhd_mean - control_mean) / pooled_std
-
-    print(f"INDEPENDENT T-TEST: ADHD vs CONTROL ({environment.upper()})")
-    print(f"\n{'ADHD GROUP':-^80}")
-    print(f"  n = {n_adhd}")
-    print(f"  Mean = {adhd_mean:.4f}%")
-    print(f"  SD = {adhd_std:.4f}")
-    print(f"  Variance = {adhd_std ** 2:.4f}")
-
-    print(f"\n{'CONTROL GROUP':-^80}")
-    print(f"  n = {n_control}")
-    print(f"  Mean = {control_mean:.4f}%")
-    print(f"  SD = {control_std:.4f}")
-    print(f"  Variance = {control_std ** 2:.4f}")
-
-    print(f"\n{'TEST RESULTS':-^80}")
-    print(f"  t-statistic = {t_statistic:.4f}")
-    print(f"  p-value = {p_value:.4f}")
-    print(f"  degrees of freedom = {n_adhd + n_control - 2}")
-    print(f"  Mean difference = {abs(adhd_mean - control_mean):.4f}%")
-
-    if p_value < 0.001:
-        significance = "*** (p < 0.001) - Highly significant!"
-    elif p_value < 0.01:
-        significance = "** (p < 0.01) - Very significant!"
-    elif p_value < 0.05:
-        significance = "* (p < 0.05) - Significant!"
-    else:
-        significance = "n.s. (p >= 0.05) - Not significant"
-
-    print(f"  Significance: {significance}")
-
-    print(f"\n{'EFFECT SIZE (Cohen d)':-^80}")
-    print(f"  Cohen's d = {cohens_d:.4f}")
-
-    if abs(cohens_d) < 0.2:
-        effect_interpretation = "Negligible effect"
-    elif abs(cohens_d) < 0.5:
-        effect_interpretation = "Small effect"
-    elif abs(cohens_d) < 0.8:
-        effect_interpretation = "Medium effect"
-    else:
-        effect_interpretation = "Large effect"
-
-    print(f"  Interpretation: {effect_interpretation}")
-
-    print(f"\n{'CONCLUSION':-^80}")
-
-    return {
-        'environment': environment,
-        'adhd_n': n_adhd,
-        'adhd_mean': adhd_mean,
-        'adhd_std': adhd_std,
-        'control_n': n_control,
-        'control_mean': control_mean,
-        'control_std': control_std,
-        't_statistic': t_statistic,
-        'p_value': p_value,
-        'df': n_adhd + n_control - 2,
-        'cohens_d': cohens_d,
-        'significant': p_value < 0.05
-    }
-
-    """Calculate standard deviation per subject from raw trial data"""
-    all_results = []
-    metadata = load_metadata_files(CAFE_DATA_PATH, CLASSROOM_DATA_PATH)
-    
-    cafe_condition_map = load_condition_mapping(CAFE_DATA_PATH)
-    classroom_condition_map = load_condition_mapping(CLASSROOM_DATA_PATH)
-    
-    xlsx_files = glob.glob(os.path.join(DATA_PATH, '*.xlsx'))
-    csv_files = glob.glob(os.path.join(DATA_PATH, '*.csv'))
-    all_files = xlsx_files + csv_files
-    
-    print("\n" + "="*80)
-    print("CALCULATING SD AND MEDIAN FROM RAW TRIAL DATA")
-    print("="*80)
-    
-    for file in all_files:
-        subject_number = extract_subject_number(file)
-        session = test_or_retest(file)
-        environment = identify_envi(subject_number, session, metadata)
-        
-        if environment is None:
-            continue
-        
-        if environment == "CAFE":
-            condition_map = cafe_condition_map
-        else:
-            condition_map = classroom_condition_map
-        
-        condition_str = condition_map.get((subject_number, session))
-        if condition_str is None:
-            continue
-        
-        raw_df = load_file(file)
-        if raw_df is None:
-            continue
-        
-        filtered_df = fillterd_data_frame_for_intrest(raw_df)
-        if filtered_df.empty:
-            continue
-        
-        print(f"Processing Subject {subject_number}, Session {session}, Environment {environment}")
-        
-        for condition_type in ['R', 'IR', 'M']:
-            condition_trials = []
-            condition_values = []
-            
-            for trial_id in range(1, 31):
-                trial_condition = identify_condition_for_trial(condition_str, trial_id)
-                if trial_condition == condition_type:
-                    level = intrest_level_for_one_quastion(trial_id, filtered_df)
-                    if level is not None and level > 0:
-                        condition_trials.append(trial_id)
-                        condition_values.append(level)
-            
-            if len(condition_values) > 0:
-                mean_val = np.mean(condition_values)
-                median_val = np.median(condition_values)
-                std_val = np.std(condition_values, ddof=1) if len(condition_values) > 1 else 0.0
-                
-                all_results.append({
-                    'Subject': subject_number,
-                    'Session': session,
-                    'Environment': environment,
-                    'Condition': condition_type,
-                    'Mean': mean_val,
-                    'Median': median_val,
-                    'SD': std_val,
-                    'N_Trials': len(condition_values),
-                })
-        
-        # Overall statistics
-        all_values = []
-        for trial_id in range(1, 31):
-            level = intrest_level_for_one_quastion(trial_id, filtered_df)
-            if level is not None and level > 0:
-                all_values.append(level)
-        
-        if len(all_values) > 0:
-            all_results.append({
-                'Subject': subject_number,
-                'Session': session,
-                'Environment': environment,
-                'Condition': 'Overall',
-                'Mean': np.mean(all_values),
-                'Median': np.median(all_values),
-                'SD': np.std(all_values, ddof=1) if len(all_values) > 1 else 0.0,
-                'N_Trials': len(all_values),
-            })
-    
-    results_df = pd.DataFrame(all_results)
-    
-    # Sort results
-    condition_order = {'Overall': 0, 'R': 1, 'IR': 2, 'M': 3}
-    results_df['Condition_Order'] = results_df['Condition'].map(condition_order)
-    results_df = results_df.sort_values(['Subject', 'Session', 'Environment', 'Condition_Order'])
-    results_df = results_df.drop('Condition_Order', axis=1)
-    
-    # Round values
-    results_df['Mean'] = results_df['Mean'].round(4)
-    results_df['Median'] = results_df['Median'].round(4)
-    results_df['SD'] = results_df['SD'].round(4)
-    
-    results_df.to_excel(output_path, index=False)
-    # print(f"\n✓ Results saved to: {output_path}")
-    print(f"Total rows: {len(results_df)}")
-    
-    return results_df
-
-def calculate_std_per_subject_from_raw_data(output_path: str):
-    """Calculate standard deviation per subject from raw trial data - FOR ACCURACY"""
-    all_results = []
-    metadata = load_metadata_files(CAFE_DATA_PATH, CLASSROOM_DATA_PATH)
-    
-    cafe_condition_map = load_condition_mapping(CAFE_DATA_PATH)
-    classroom_condition_map = load_condition_mapping(CLASSROOM_DATA_PATH)
-    
-    xlsx_files = glob.glob(os.path.join(DATA_PATH, '*.xlsx'))
-    csv_files = glob.glob(os.path.join(DATA_PATH, '*.csv'))
-    all_files = xlsx_files + csv_files
-    
-    print("\n" + "="*80)
-    print("CALCULATING SD AND MEDIAN FROM RAW TRIAL DATA - ACCURACY")
-    print("="*80)
-    
-    for file in all_files:
-        subject_number = extract_subject_number(file)
-        session = test_or_retest(file)
-        environment = identify_envi(subject_number, session, metadata)
-        
-        if environment is None:
-            continue
-        
-        if environment == "CAFE":
-            condition_map = cafe_condition_map
-        else:
-            condition_map = classroom_condition_map
-        
-        condition_str = condition_map.get((subject_number, session))
-        if condition_str is None:
-            continue
-        
-        raw_df = load_file(file)
-        if raw_df is None:
-            continue
-        
-
-        filtered_df = filtered_data_frame_for_accuracy(raw_df)
-        if filtered_df.empty:
-            continue
-        
-        print(f"Processing Subject {subject_number}, Session {session}, Environment {environment}")
-        
-        #calcultae for each trail
-        for condition_type in ['R', 'IR', 'M']:
-            condition_trials = []
-            condition_accuracies = []
-            
-        
-            for trial_id in range(1, 31):
-                trial_condition = identify_condition_for_trial(condition_str, trial_id)
-                if trial_condition == condition_type:
-                    # acuuracy calculate for trail
-                    trial_data = filtered_df[filtered_df['TrialID'] == trial_id]
-                    if len(trial_data) > 0:
-                        correct = trial_data[trial_data['SingleChoiceAccurate'] == True]
-                        accuracy = (len(correct) / len(trial_data)) * 100
-                        condition_trials.append(trial_id)
-                        condition_accuracies.append(accuracy)
-            
-            if len(condition_accuracies) > 0:
-                mean_val = np.mean(condition_accuracies)
-                median_val = np.median(condition_accuracies)
-                std_val = np.std(condition_accuracies, ddof=1) if len(condition_accuracies) > 1 else 0.0
-                
-                all_results.append({
-                    'Subject': subject_number,
-                    'Session': session,
-                    'Environment': environment,
-                    'Condition': condition_type,
-                    'Mean': mean_val,
-                    'Median': median_val,
-                    'SD': std_val,
-                    'N_Trials': len(condition_accuracies),
-                })
-        
-        # Overall statistics
-        all_accuracies = []
-        for trial_id in range(1, 31):
-            trial_data = filtered_df[filtered_df['TrialID'] == trial_id]
-            if len(trial_data) > 0:
-                correct = trial_data[trial_data['SingleChoiceAccurate'] == True]
-                accuracy = (len(correct) / len(trial_data)) * 100
-                all_accuracies.append(accuracy)
-        
-        if len(all_accuracies) > 0:
-            all_results.append({
-                'Subject': subject_number,
-                'Session': session,
-                'Environment': environment,
-                'Condition': 'Overall',
-                'Mean': np.mean(all_accuracies),
-                'Median': np.median(all_accuracies),
-                'SD': np.std(all_accuracies, ddof=1) if len(all_accuracies) > 1 else 0.0,
-                'N_Trials': len(all_accuracies),
-            })
-    
-    results_df = pd.DataFrame(all_results)
-    
-    # Sort results
-    condition_order = {'Overall': 0, 'R': 1, 'IR': 2, 'M': 3}
-    results_df['Condition_Order'] = results_df['Condition'].map(condition_order)
-    results_df = results_df.sort_values(['Subject', 'Session', 'Environment', 'Condition_Order'])
-    results_df = results_df.drop('Condition_Order', axis=1)
-    
-    # Round values
-    results_df['Mean'] = results_df['Mean'].round(4)
-    results_df['Median'] = results_df['Median'].round(4)
-    results_df['SD'] = results_df['SD'].round(4)
-    
-    results_df.to_excel(output_path, index=False)
-    print(f"\n✓ Results saved to: {output_path}")
-    print(f"Total rows: {len(results_df)}")
-    
-    return results_df
-
-def main():
-        #  Cafe
-    cafe_df = results_for_one_env("cafe")
-    cafe_output_path = r"C:\Users\peleg\Desktop\Analysis_Code\Output_Results\accuracy\results_output_for_accuracy_Cafe.xlsx"    
-    cafe_df.to_excel(cafe_output_path, index=False)
-#  Classroom
-    classroom_df = results_for_one_env("classroom")
-    classroom_output_path = r"C:\Users\peleg\Desktop\Analysis_Code\Output_Results\accuracy\results_output_for_accuracy_Classroom.xlsx"
-    classroom_df.to_excel(classroom_output_path, index=False)
-
-#combined
-    output_path = r"C:\Users\peleg\Desktop\Lub\comparison_cafe_vs_classroom.png"
-    combiend_df= pd.concat([cafe_df, classroom_df],ignore_index=True)
-    stats_output_path = r"C:\Users\peleg\Desktop\Analysis_Code\Output_Results\accuracy\results_output_for_accuracy_all.xlsx"
-    stats_df = calculate_std_per_subject_from_raw_data(stats_output_path)
-    #create_overall_comparison_chart(cafe_df, classroom_df,output_path)
-
-
-if __name__== "__main__":
-    main()
+"""
