@@ -15,9 +15,9 @@ import re
 # CONFIGURATION - Import from config file
 try:
     from config import *
-    print("✓ Configuration loaded successfully")
+    print(" Configuration loaded successfully")
 except ImportError:
-    print("⚠ Warning: config.py not found, using default paths")
+    print(" Warning: config.py not found, using default paths")
     # Constants
     ADHD = 0
     Control = 1
@@ -108,8 +108,7 @@ def fillterd_data_frame_for_intrest(file_to_read):
         (file_to_read['QuestionID'] == INTRESED_LEVEL_QUASTION)
     ]
 
-
-def intrest_level_for_one_quastion(number_of_quastion: int, filltered_df) -> int:
+def interest_level_for_one_question(number_of_quastion: int, filltered_df) -> int:
     """Get interest level for a single question"""
     question_rows = filltered_df[filltered_df['TrialID'] == number_of_quastion]
 
@@ -122,32 +121,6 @@ def intrest_level_for_one_quastion(number_of_quastion: int, filltered_df) -> int
         if column in row.index and row[column] == True:
             return index - 1
     return 0
-
-
-def intrest_level_for_all_questions(filled_df) -> float:
-    """Calculate average interest level for all questions"""
-    print(f"Total rows in filtered data: {len(filled_df)}")
-    print(f"Unique TrialIDs: {sorted(filled_df['TrialID'].unique())}")
-
-    all_intrested_levels = 0
-    NUMBER_OF_TRAILS = 30
-    found_count = 0
-
-    for question_num in range(1, NUMBER_OF_TRAILS + 1):
-        level = intrest_level_for_one_quastion(question_num, filled_df)
-        if level is not None and level > 0:
-            found_count += 1
-            all_intrested_levels += level
-        else:
-            print(f"  Missing or zero for question {question_num}")
-
-    print(f"Found {found_count} out of {NUMBER_OF_TRAILS} questions")
-
-    if found_count == 0:
-        return 0
-
-    return all_intrested_levels / NUMBER_OF_TRAILS
-
 
 def parse_condition_sequence(condition_str: str) -> tuple:
     """Parse condition sequence string into tuple"""
@@ -234,7 +207,7 @@ def calculate_avg_interest_for_condition(filtered_df, condition_str: str, condit
     count = 0
 
     for trial_id in condition_trials:
-        level = intrest_level_for_one_quastion(trial_id, filtered_df)
+        level = interest_level_for_one_question(trial_id, filtered_df)
         if level is not None and level > 0:
             total_interest += level
             count += 1
@@ -370,7 +343,7 @@ def calculate_std_per_subject_from_raw_data(output_path: str):
             for trial_id in range(1, 31):
                 trial_condition = identify_condition_for_trial(condition_str, trial_id)
                 if trial_condition == condition_type:
-                    level = intrest_level_for_one_quastion(trial_id, filtered_df)
+                    level = interest_level_for_one_question(trial_id, filtered_df)
                     if level is not None and level > 0:
                         condition_trials.append(trial_id)
                         condition_values.append(level)
@@ -394,7 +367,7 @@ def calculate_std_per_subject_from_raw_data(output_path: str):
         # Overall statistics
         all_values = []
         for trial_id in range(1, 31):
-            level = intrest_level_for_one_quastion(trial_id, filtered_df)
+            level = interest_level_for_one_question(trial_id, filtered_df)
             if level is not None and level > 0:
                 all_values.append(level)
         
@@ -432,25 +405,25 @@ def calculate_std_per_subject_from_raw_data(output_path: str):
 
 def main():
     """Main execution function"""
-    # Cafe
+    # create Cafe's files
     print("Creating Cafe data...")
     cafe_df = results_For_one_envi("cafe")
-    cafe_output_path = r"C:\Users\peleg\Desktop\Analysis_Code\Output_Results\cafe\results_output_for_intrestLVL_cafe.xlsx"
+    cafe_output_path = r"C:\Users\peleg\Desktop\Analysis_Code\Output_Results\interestlvl\results_output_for_intrestLVL_cafe.xlsx"
     cafe_df.to_excel(cafe_output_path, index=False)
     print(f"✓ Cafe data saved to: {cafe_output_path}")
 
-    # Classroom
+    # create Classroom's files
     print("\nCreating Classroom data...")
     classroom_df = results_For_one_envi("classroom")
-    classroom_output_path = r"C:\Users\peleg\Desktop\Analysis_Code\Output_Results\cafe\results_output_for_intrestLVL_classroom.xlsx"
+    classroom_output_path = r"C:\Users\peleg\Desktop\Analysis_Code\Output_Results\interestlvl\results_output_for_intrestLVL_classroom.xlsx"
     classroom_df.to_excel(classroom_output_path, index=False)
     print(f"✓ Classroom data saved to: {classroom_output_path}")
 
 
-    # Statistics
-    stats_output_path = r"C:\Users\peleg\Desktop\Analysis_Code\Output_Results\cafe\results_output_for_intrestLVL_all.xlsx"
+    # create complete table
+    stats_output_path = r"C:\Users\peleg\Desktop\Analysis_Code\Output_Results\interestlvl\results_output_for_intrestLVL_all.xlsx"
     stats_df = calculate_std_per_subject_from_raw_data(stats_output_path)
-    print("✓ All analyses completed!")
+    print(" All analyses completed!")
 
 
 if __name__ == "__main__":

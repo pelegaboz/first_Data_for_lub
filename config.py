@@ -50,6 +50,7 @@ CONDITION_FILE_PATH = r"C:\Users\peleg\Desktop\Analysis_Code\Input_Data\assignme
 
 # Main output directory
 OUTPUT_DIR = r"C:\Users\peleg\Desktop\Analysis_Code\Output_Results"
+OUTPUT_DIR_VISUALIZATION = r"C:\Users\peleg\Desktop\Analysis_Code\Output_Results\Visualization"
 
 # Accuracy results
 ACCURACY_OUTPUT_DIR = r"C:\Users\peleg\Desktop\Analysis_Code\Output_Results\accuracy"
@@ -62,7 +63,7 @@ INTEREST_OUTPUT_DIR = r"C:\Users\peleg\Desktop\Analysis_Code\Output_Results\inte
 INTEREST_CAFE_OUTPUT = r"C:\Users\peleg\Desktop\Analysis_Code\Output_Results\interestlvl\results_output_for_intrestLVL_cafe.xlsx"
 INTEREST_CLASSROOM_OUTPUT = r"C:\Users\peleg\Desktop\Analysis_Code\Output_Results\interestlvl\results_output_for_intrestLVL_classroom.xlsx"
 INTEREST_ALL_OUTPUT = r"C:\Users\peleg\Desktop\Analysis_Code\Output_Results\interestlvl\results_output_for_intrestLVL_all.xlsx"
-
+MAIN_DATA= r"C:\Users\peleg\Desktop\Analysis_Code\Output_Results\data_peleg.xlsx"
 
 
 # ============================================================================
