@@ -3,11 +3,14 @@
 import pandas as pd
 import numpy as np
 import os
-
+from pathlib import Path
+# Get the base directory (where the script is located)
+BASE_DIR = Path(__file__).parent
 # CONFIGURATION - Import from config file
-MAIN_DATA = r"C:\Users\peleg\Desktop\Analysis_Code\Output_Results\data_peleg.xlsx"
-DATA_PATH_ADHD = r"C:\Users\peleg\Desktop\Analysis_Code\Input_Data\ADHD_group.xlsx"
-PARTICIPANTS_INFO= r"C:\Users\peleg\Desktop\Analysis_Code\Input_Data\participants_info.xlsx"
+
+MAIN_DATA = BASE_DIR / "Output_Results" / "data_peleg.xlsx"
+DATA_PATH_ADHD = BASE_DIR / "Input_Data" / "ADHD_group.xlsx"
+PARTICIPANTS_INFO = BASE_DIR / "Input_Data" / "participants_info.xlsx"
 try:
     from config import *
     print("Configuration loaded successfully")
@@ -21,21 +24,19 @@ except ImportError:
     NUMBER_TEST = 1
     NUMBER_RETEST = 2
     MAX_TRIAL_ID = 30
-    # Paths
-    MAIN_DATA = r"C:\Users\peleg\Desktop\Analysis_Code\Output_Results\data_peleg.xlsx"
-    DATA_PATH_ADHD = r"C:\Users\peleg\Desktop\Analysis_Code\Input_Data\ADHD_group.xlsx"
-    ACCURACY_CAFE_OUTPUT = r"C:\Users\peleg\Desktop\Analysis_Code\Output_Results\accuracy\results_output_for_accuracy_Cafe.xlsx"
-    ACCURACY_CLASSROOM_OUTPUT = r"C:\Users\peleg\Desktop\Analysis_Code\Output_Results\accuracy\results_output_for_accuracy_Classroom.xlsx"
-    ACCURACY_ALL_OUTPUT = r"C:\Users\peleg\Desktop\Analysis_Code\Output_Results\accuracy\results_output_for_accuracy_all.xlsx"
-    INTEREST_CAFE_OUTPUT = r"C:\Users\peleg\Desktop\Analysis_Code\Output_Results\interestlvl\results_output_for_intrestLVL_cafe.xlsx"
-    INTEREST_CLASSROOM_OUTPUT = r"C:\Users\peleg\Desktop\Analysis_Code\Output_Results\interestlvl\results_output_for_intrestLVL_classroom.xlsx"
-    INTEREST_ALL_OUTPUT = r"C:\Users\peleg\Desktop\Analysis_Code\Output_Results\interestlvl\results_output_for_intrestLVL_all.xlsx"
-    
+    # Paths - relative to script location
+    MAIN_DATA = BASE_DIR / "Output_Results" / "data_peleg.xlsx"
+    DATA_PATH_ADHD = BASE_DIR / "Input_Data" / "ADHD_group.xlsx"
+    ACCURACY_CAFE_OUTPUT = BASE_DIR / "Output_Results" / "accuracy" / "results_output_for_accuracy_Cafe.xlsx"
+    ACCURACY_CLASSROOM_OUTPUT = BASE_DIR / "Output_Results" / "accuracy" / "results_output_for_accuracy_Classroom.xlsx"
+    ACCURACY_ALL_OUTPUT = BASE_DIR / "Output_Results" / "accuracy" / "results_output_for_accuracy_all.xlsx"
+    INTEREST_CAFE_OUTPUT = BASE_DIR / "Output_Results" / "interestlvl" / "results_output_for_intrestLVL_cafe.xlsx"
+    INTEREST_CLASSROOM_OUTPUT = BASE_DIR / "Output_Results" / "interestlvl" / "results_output_for_intrestLVL_classroom.xlsx"
+    INTEREST_ALL_OUTPUT = BASE_DIR / "Output_Results" / "interestlvl" / "results_output_for_intrestLVL_all.xlsx"    
 
 def change_envi(df):
-    """
-    Normalize environment names
-    """
+    #Normalize environment names
+    
     df['Environment'] = df['Environment'].replace({
        "CLASSROOM": "Classroom",
        "CAFE": "Cafe"
@@ -43,9 +44,9 @@ def change_envi(df):
     return df
 
 def create_main_data_file():
-    """
-   create the final sheet from accuracy and interest level
-    """
+    
+   #create the final sheet from accuracy and interest level
+    
     
     print("CREATING MAIN_DATA FILE FROM SCRATCH")
     print("="*80)
@@ -83,7 +84,7 @@ def create_main_data_file():
     # environment= small leters
     main_df['environment'] = main_df['environment'].str.lower()
     
-    print(f"   ✓ Unique participants: {len(main_df)}")
+    print(f" Unique participants: {len(main_df)}")
     
     # 4. all accuracy
     print("\n4. Calculating overall accuracy...")
@@ -129,16 +130,14 @@ def create_main_data_file():
     print("\n8. Saving MAIN_DATA file...")
     main_df.to_excel(MAIN_DATA, index=False)
     
-    print(f"✓ MAIN_DATA file created successfully!")
-    print(f"✓ File saved to: {MAIN_DATA}")
-    print(f"✓ Total rows: {len(main_df)}")
+    print(f" MAIN_DATA file created successfully!")
+    print(f" File saved to: {MAIN_DATA}")
+    print(f" Total rows: {len(main_df)}")
     
     return main_df
 
 def check_and_create_main_data():
-    """
-   if MAIN_DATA dosent exist- create it
-    """
+   #if MAIN_DATA dosent exist- create it
     # check if exist
     if not os.path.exists(MAIN_DATA):
         print(f" MAIN_DATA file not found at: {MAIN_DATA}")
@@ -181,10 +180,7 @@ def change_version(df,from_df):
     return df 
 
 def change_ADHD(df, from_df):
-    """
-    Update the subject group information safely.
-    Ensures IDs are treated as strings and strips whitespace.
-    """
+    #Update the subject group information safely.
     source_clean = from_df.copy()
     source_clean["Part_id"] = source_clean["Part_id"].astype(str).str.strip()
     lookup_key = df['subject_id'].astype(str).str.strip()
@@ -248,6 +244,7 @@ def change_interest_mean_all(df, from_df):
 
 
 def change_interest_lvl_per_condition(main_df,interest_lvl_df):
+    #changing the interest level per condition(R,IR,M)
     
     # pivot table
     pivot_df = interest_lvl_df.pivot_table(
@@ -297,9 +294,7 @@ def change_interest_lvl_per_condition(main_df,interest_lvl_df):
     return main_df    
     
 def change_SD_interest_lvl(df, from_df):
-    """
-calculte intrest lvl SD
-    """
+#calculte intrest lvl SD
     from_df = change_envi(from_df.copy())
     overall_sd = from_df[from_df['Condition'] == 'Overall'].copy()
     overall_sd = overall_sd.rename(columns={
@@ -328,6 +323,7 @@ calculte intrest lvl SD
 
 def change_median_interest_lvl(df, from_df):
     
+    #creating the median for each subject's interest level
     from_df = change_envi(from_df.copy())
     overall_sd = from_df[from_df['Condition'] == 'Overall'].copy()
     overall_sd = overall_sd.rename(columns={
@@ -356,6 +352,7 @@ def change_median_interest_lvl(df, from_df):
 
 def change_sd_lvl_per_condition(main_df,intrest_lvl_df):
     
+    #creating sd level per subject interest level
     # pivot table
     pivot_df = intrest_lvl_df.pivot_table(
         index=['Subject', 'Environment'], 
@@ -406,7 +403,8 @@ def change_sd_lvl_per_condition(main_df,intrest_lvl_df):
 def change_acc_per_condition(main_df,cafe_df,classroom_df):
     acc_df= pd.concat([cafe_df,classroom_df],ignore_index= True)
     acc_df.columns = acc_df.columns.str.strip()
-    
+    acc_df['Accuracy'] = acc_df['Accuracy'] / 100
+    #adding to the table each condition(R,IR,M) mean
     # pivot table
     pivot_df = acc_df.pivot_table(
         index=['Subject', 'Environment'], 
@@ -457,6 +455,8 @@ def change_acc_per_condition(main_df,cafe_df,classroom_df):
 
 
 def main():
+    # Create output directories if they don't exist
+    (BASE_DIR / "Output_Results").mkdir(parents=True, exist_ok=True)
     
     #create new file if needed
     main_df = check_and_create_main_data()
@@ -499,6 +499,27 @@ def main():
     # saving
     print("\nSaving updated MAIN_DATA...")
     main_df.to_excel(MAIN_DATA, index=False)
+    
+    
+ #  Tests 
+def test_change_envi():
+    df = pd.DataFrame({
+        'Environment': ['CAFE', 'CLASSROOM', 'CAFE', 'CLASSROOM']
+    })
+    result = change_envi(df)
+    assert list(result['Environment']) == ['Cafe', 'Classroom', 'Cafe', 'Classroom']
+
+
+def test_change_ADHD():
+    main_df = pd.DataFrame({
+        'subject_id': [101, 102, 103]
+    })
+    adhd_df = pd.DataFrame({
+        'Part_id': [101, 102, 103],
+        'which':   ['X', 'V', 'X']   # X = Control, V = ADHD
+    })
+    result = change_ADHD(main_df, adhd_df)
+    assert list(result['adhd']) == [0, 1, 0]   
     
 if __name__== "__main__":
     main()

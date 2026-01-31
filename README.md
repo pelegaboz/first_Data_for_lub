@@ -1,359 +1,246 @@
 # ADHD Research Data Analysis System
 
 ## Overview
-Comprehensive analysis system for ADHD research data, comparing participant performance and interest levels across two learning environments (Cafe vs Classroom).
-
+Comprehensive analysis system for data that I worked on proccesing in Golumbic lab. the data comparing participant performance and interest levels across two learning environments (Cafe vs Classroom). The system processes raw participant data, calculates accuracy and interest level metrics, performs statistical analyses, and generates visualizations.
 ---
+Key Objectives:
 
+Accuracy Analysis: Compare cognitive performance accuracy across environments and specific trial conditions.
+
+Interest Level Assessment: Analyze subjective interest levels reported by participants on a scale of 1-7.
+
+Environmental Comparison: Determine if auditory distractions (Cafe) versus a quiet setting (Classroom) differentially affect ADHD and Control groups.
+
+Methodology: The system processes raw participant logs, calculates performance metrics, merges demographic data, performs statistical testing (paired t-tests), and generates visualizations.
+## Folder & Module Structure
+The project uses a relative path structure centered around a base directory defined in config.py.
+
+Project_Root/
+├── Input_Data/                     # Raw data sources
+│   ├── All_Answers/                # Individual participant Excel/CSV files
+│   ├── ADHD_group.xlsx             # Group classification (ADHD/Control)
+│   ├── assignment_log.csv          # Master log of sessions and conditions
+│   └── participants_info.xlsx      # Demographic and version info 
+│
+├── Output_Results/                 # Generated analysis products
+│   ├── accuracy/                   # Processed accuracy Excel files
+│   ├── interestlvl/                # Processed interest level Excel files
+│   ├── Visualization/              # Generated plots and histograms
+│   ├── statistical_tests/          # T-test summaries and significance tables
+│   └── data_peleg.xlsx             # Final merged master dataset
+│
+├── Core Scripts/
+│   ├── config.py                   # Central configuration (paths, constants)
+│   ├── 1create_data.py             # Data preparation and splitting 
+│   ├── 2accuracy.py                # Accuracy metric calculation
+│   ├── 2interest_level.py          # Interest level metric calculation
+│   ├── 3changes_in_data.py         # Data merging and master file creation
+│   ├── 4visualization.py           # Graph generation
+│   └── 5statistical_tests.py       # Statistical analysis
+│
+└── requirements.txt                # Python dependencies
 ## System Requirements
 
 ### Prerequisites
 - Python 3.8 or higher
-- Windows OS
+- Windows/Mac/Linux OS
 - Approximately 500MB free disk space
 
 ### Required Python Libraries
+```
+pandas
+numpy
+matplotlib
+scipy
+openpyxl
+pathlib
+```
+
 All dependencies are listed in `requirements.txt` and will be installed automatically.
 
 ---
 
-## Installation Guide
 
-### Step 1: Verify Python Installation
-Open Command Prompt (CMD) and run:
-```bash
-python --version
-```
-Expected output: Python 3.8.x or higher
-
-If Python is not installed, download from: https://www.python.org/downloads/
-
-### Step 2: Install Required Libraries
-Navigate to the project directory and run:
-```bash
-cd path\to\Analysis_Code
-pip install -r requirements.txt
-```
-Installation time: Approximately 2-3 minutes
-
-### Step 3: Configure File Paths
-1. Open `config.py` in a text editor
-2. Locate the line:
-   ```python
-   BASE_PATH = r"C:\Users\YourName\Desktop\Analysis_Code"
-   ```
-3. Replace `YourName` with your actual Windows username
-4. Save the file (Ctrl+S)
-
-### Step 4: Verify Configuration
-Run the configuration verification:
-```bash
-python config.py
-```
 
 Expected output:
 ```
-✓ All output directories created successfully
-✓ Base Path: [your path]
-✓ Input Data: [your path]
-✓ All Answers: [your path]
+All output directories created successfully
+Configuration loaded successfully
+All input files found
 ```
-
-If you see any "✗" marks, the path configuration is incorrect.
-
----
 
 ## Running the Analysis
 
-### Method 1: Automated Execution (Recommended)
-
-#### Option A: Using Batch File
-Double-click on `START.bat` to run all analyses automatically.
-
-#### Option B: Using Python Command
-```bash
-python main.py
-```
-
-This will execute all three analysis modules in sequence:
-1. Accuracy Analysis (2-3 minutes)
-2. Interest Level Analysis (2-3 minutes)
-3. Data Updates (1 minute)
-
-Total execution time: 5-7 minutes
-
-### Method 2: Individual Module Execution
-
-#### Accuracy Analysis
-```bash
-python accuracy.py
-```
-
-**Purpose:** Calculates accuracy percentages for participant responses
-
-**Output Files:**
-- `results_output_for_accuracy_Cafe.xlsx`
-- `results_output_for_accuracy_Classroom.xlsx`
-- Charts in `Output_Results/Accuracy_Analysis/`
-
-**Execution Time:** 2-3 minutes
-
----
-
-#### Interest Level Analysis
-```bash
-python interest_level.py
-```
-
-**Purpose:** Analyzes participant interest levels across different conditions
-
-**Output Files:**
-- `results_output_for_intrest_level_Cafe.xlsx`
-- `results_output_for_intrest_level_Classroom.xlsx`
-- `statistics_by_environment_and_condition.xlsx`
-- Charts in `Output_Results/Interest_Level/`
-
-**Execution Time:** 2-3 minutes
-
----
-
-#### Data Updates
-```bash
-python changes_in_data.py
-```
-
-**Purpose:** Updates and synchronizes data across different files
-
-**Output Files:**
-- Updates `data_peleg.xlsx` with new analysis results
-
-**Execution Time:** 1 minute
-
----
-
-## Directory Structure
-
-```
-Analysis_Code/
-│
-├── Core Scripts
-│   ├── main.py                     # Master execution script
-│   ├── accuracy.py                 # Accuracy analysis module
-│   ├── interest_level.py           # Interest level analysis module
-│   └── changes_in_data.py          # Data synchronization module
-│
-├── Configuration Files
-│   ├── config.py                   # Path and constant definitions
-│   ├── requirements.txt            # Python dependencies
-│   └── README.md                   # This documentation
-│
-├── Utilities
-│   └── START.bat                   # Windows batch launcher
-│
-├── Input_Data/                     # Input data directory
-│   ├── All_Answers/                # Participant response files
-│   ├── ADHD_group.xlsx             # Group classification data
-│   ├── assignment_log.csv          # Complete assignment log
-│   ├── assignment_log_cafe.csv     # Cafe environment assignments
-│   ├── assignment_log_classroom.csv# Classroom environment assignments
-│   └── data_peleg.xlsx             # Master data file
-│
-└── Output_Results/                 # Analysis output directory
-    ├── Accuracy_Analysis/          # Accuracy charts and data
-    └── Interest_Level/             # Interest level charts and data
-   └── data_peleg.xlsx             # Master data file
-```
-
----
-
-## Module Documentation
-
-### accuracy.py
-
-**Primary Functions:**
-- `results_for_all_files()` - Processes all participant files
-- `results_for_one_env(environment)` - Analyzes single environment data
-- `comparison_bar_chart_accuracy(df, comparison_type)` - Generates comparison charts
-- `slope_bar_accuracy(df)` - Creates individual subject trajectory plots
-- `independent_ttest_adhd_vs_control(df, environment)` - Statistical comparison
-
-**Output Columns:**
-- `Subject` - Participant ID number
-- `Session` - Test session (1=Test, 2=Retest)
-- `Environment` - Testing environment (CAFE/CLASSROOM)
-- `Group` - Participant group (0=ADHD, 1=Control)
-- `Condition` - Trial condition (R/IR/M)
-- `Accuracy` - Percentage accuracy score
-
----
-
-### interest_level.py
-
-**Primary Functions:**
-- `results_For_one_envi(environment)` - Calculates mean interest levels
-- `calculate_std_per_subject_from_raw_data(output_path)` - Computes statistical measures
-- `comparison_by_condition(df)` - Generates condition comparisons
-- `slop_bar(df)` - Creates trajectory visualizations
-- `histogram_interest_by_environment(df)` - Distribution analysis
-
-**Output Columns:**
-- `Subject` - Participant ID number
-- `Session` - Test session
-- `Environment` - Testing environment
-- `Group` - Participant group
-- `Condition` - Trial condition (R/IR/M/Overall)
-- `Interest_Level` - Mean interest level score
-- `SD` - Standard deviation
-- `Median` - Median interest level
+### Complete Analysis Pipeline (Recommended)
 
----
-
-### changes_in_data.py
+Run the scripts in the following order:
 
-**Primary Functions:**
-- `change_acc_per_condition(main_df, cafe_df, classroom_df)` - Updates accuracy by condition
-- `change_intrest_lvl_per_condition(main_df, intrest_df)` - Updates interest levels
-- `change_SD_intrest_lvl(df, from_df)` - Updates standard deviations
-- `change_median_intrest_lvl(df, from_df)` - Updates median values
-
-**Usage:**
-Execute only when master data file requires updates from analysis results.
+Key Workflow Stages
+The analysis pipeline must be executed in the following order to ensure data dependencies are met:
 
----
+# Stage 1: Data Import & Split
+Script: 1create_data.py
 
-## Data Requirements
-
-### Input File Format
+Action: Reads the main assignment_log and participants_info.
+- Key Functions:
+- `create_file_ADHD(from_df)` - Extracts ADHD classification data
+- `test_files_in_both_environments(assignment_log_df)` - **NEW:** Validates file presence in both environments
+- `create_file_assignment_log_per_envi(assignment_log_general, envi, output_path)` - Splits logs by environment
 
-**Participant Response Files (All_Answers/):**
-Required columns:
-- `TrialID` - Trial identification number (1-30)
-- `QuestionID` - Question identification number
-- `SingleChoiceAccurate` - Response accuracy (Boolean)
-- `ReportedAnswer2-8` - Interest level responses (Boolean)
+Outcome: Splits the log into two environment-specific files: assignment_log_cafe.csv and assignment_log_classroom.csv. This step is essential for the subsequent parallel processing of environments.
 
-**Assignment Log Files:**
-Required columns:
-- `Subject` - Participant ID
-- `Session` - Session number
-- `Condition` - Condition sequence string
+# Stage 2: Metric Calculation (Processing)
+Two scripts run independently to process raw participant files from the All_Answers directory:
 
-**Group Classification File:**
-Required columns:
-- `Part_id` - Participant ID
-- `which` - Classification indicator ('V' for valid entries)
+Accuracy: 2accuracy.py filters for valid trials (TrialID <= 30) and calculates the percentage of correct answers (SingleChoiceAccurate) for the Test and Retest sessions.
+Interest level: 2interest_level.py extracts responses to the specific interest question (QuestionID == 7777) and converts boolean flags into a 1-7 numerical scale.
+- Key Functions accuracy:
+- `results_for_one_env(which_envi)` - Processes single environment
+- `calculate_std_per_subject_from_raw_data(output_path)` - Calculates statistics
+- `load_condition_mapping(condition_file_path)` - Maps conditions to subjects
+- `identify_condition_for_trial(condition_str, trial_id)` - Determines trial condition
+- `calculate_accuracy_for_trials(filtered_df, trial_ids)` - Computes accuracy
 
----
+- Key Functions interst level:
+- `results_For_one_envi(which_envi)` - Environment-specific analysis
+- `calculate_std_per_subject_from_raw_data(output_path)` - Statistical calculations
+- `interest_level_for_one_question(number_of_quastion, filltered_df)` - Extracts interest rating
+- `calculate_avg_interest_for_condition(filtered_df, condition_str, condition_type)` - Averages by condition
 
-## Troubleshooting
 
-### Common Issues and Solutions
 
-**Issue: "No module named 'pandas'"**
-Solution:
-```bash
-pip install pandas numpy matplotlib scipy openpyxl xlrd
-```
+# Stage 3: Data Integration
+Script: 3changes_in_data.py
 
-**Issue: "File not found" or "Path does not exist"**
-Solution:
-1. Open `config.py`
-2. Verify `BASE_PATH` is correct
-3. Run `python config.py` to verify all paths
+Action: Merges the output from Stage 2 into a single master file (data_peleg.xlsx).
 
-**Issue: No output files generated**
-Solution:
-1. Verify files exist in `Input_Data/All_Answers/`
-2. Check input file format matches requirements
-3. Review error messages in console output
+Details:
 
-**Issue: Script appears frozen**
-Solution:
-- Processing large datasets takes time (2-5 minutes is normal)
-- If exceeds 10 minutes, press Ctrl+C and check for errors
+Combines Cafe and Classroom data.
 
-**Issue: Missing visualizations**
-Solution:
-1. Verify sufficient data exists (minimum 5 participants)
-2. Check for PNG files in output directories
-3. Review console for matplotlib errors
+Adds demographic info (ADHD/Control) and experiment versions.
 
-**Issue: Permission denied when writing files**
-Solution:
-1. Close any open Excel files in output directories
-2. Run Command Prompt as Administrator
-3. Verify write permissions on output directories
+Calculates standard deviations (SD) and medians per subject.
+- Key Functions:
+- `check_and_create_main_data()` - Creates or validates master file
+- `change_acc_per_condition(main_df, cafe_df, classroom_df)` - Updates accuracy data
+- `change_interest_lvl_per_condition(main_df, interest_lvl_df)` - Updates interest data
+- `change_SD_interest_lvl(df, from_df)` - Updates standard deviations
+- `change_median_interest_lvl(df, from_df)` - Updates median values
+- `change_ADHD(df, from_df)` - Updates group classifications
+- `change_version(df, from_df)` - Updates experiment versions
 
----
 
-## Output File Locations
+# Stage 4: Visualization
+Script: 4visualization.py
 
-All analysis outputs are saved in the `Output_Results/` directory:
+Action: Generates static plots saved to Output_Results/Visualization.
 
-**Accuracy Analysis:**
-- Excel tables: `Output_Results/`
-- Charts: `Output_Results/Accuracy_Analysis/`
+Outputs:
 
-**Interest Level Analysis:**
-- Excel tables: `Output_Results/`
-- Charts: `Output_Results/Interest_Level/`
-- Statistics: `Output_Results/Interest_Level/statistics_by_environment_and_condition.xlsx`
+Slope Graphs: Individual trajectory of change between Cafe and Classroom.
 
----
+Grouped Bar Charts: Comparisons by Group, Environment, and Session.
 
-## Performance Notes
+Histograms: Distribution of scores across subjects.
 
-**Typical Execution Times:**
-- Accuracy analysis: 2-3 minutes
-- Interest level analysis: 2-3 minutes
-- Data updates: 1 minute
-- Complete automated run: 5-7 minutes
 
-**Resource Usage:**
-- Memory: ~500MB RAM
-- Disk space: ~100MB for outputs
-- CPU: Standard processing (single-threaded)
+- Key Functions:
+- `load_all_data()` - Loads all processed data
+- `slope_graph_accuracy(df, save_path)` - Individual trajectories
+- `comparison_acc_by_condition_and_environment(df, save_path)` - Grouped bar charts
+- `histogram_acc_by_environment(df, save_path)` - Distribution plots
+- `comparison_interest_by_group(df, save_path)` - Group comparisons
+- `create_all_visualizations()` - Master execution function
 
----
 
-## Version Information
+# Stage 5: Statistical Analysis
+Script: 5statistical_tests.py
 
-**System Version:** 1.0
-**Last Updated:** January 2026
-**Python Compatibility:** 3.8+
-**Operating System:** Windows 10/11
+Action: Performs Paired T-Tests to determine statistical significance.
 
----
+Metrics: Calculates p-values and Cohen's d (effect size) for both Accuracy and Interest Levels, comparing Cafe vs. Classroom globally and per condition.
+- Key Functions:
+- `perform_paired_ttest(cafe_data, classroom_data, metric_name)` - Executes t-test
+- `ttest_accuracy_by_environment()` - Accuracy comparisons
+- `ttest_interest_by_environment()` - Interest comparisons
+- `create_summary_table(accuracy_results, interest_results, output_path)` - Combined summary
 
-## Contact Information
+- Statistical Methods:
+- Paired t-tests (within-subjects design)
+- Cohen's d effect size calculation
+- Significance levels: p < 0.05 (*), p < 0.01 (**), p < 0.001 (***)
 
-**Developer:** [Your Name]
-**Email:** [Your Email]
-**Date Created:** [Current Date]
 
----
+# Key Definitions & Configuration
+The following parameters are defined in config.py and used throughout the system:
 
-## Important Notes
+Group Classifications
+0 (ADHD): Participants diagnosed with ADHD.
 
-1. **Data Backup:** Always maintain backup copies of original input data
-2. **File Integrity:** Do not modify files in `Input_Data/` during analysis
-3. **Output Management:** Output files can be safely deleted; they will be regenerated
-4. **Execution Order:** For first-time analysis, run `main.py` to generate all outputs
-5. **Path Configuration:** Verify path configuration before first execution
+1 (Control): Control group participants.
 
----
+Experimental Conditions
+The experiment includes three distinct conditions that appear in varying sequences (e.g., R-IR-M):
 
-## Pre-Delivery Checklist
+R: Regular/Base condition.
 
-- [ ] Python 3.8+ installed and verified
-- [ ] All dependencies from requirements.txt installed
-- [ ] config.py updated with correct paths
-- [ ] Test run of `python config.py` successful
-- [ ] Test run of `python accuracy.py` completed
-- [ ] Test run of `python interest_level.py` completed
-- [ ] All input data files present in Input_Data/
-- [ ] Output directories created successfully
+IR: Irrelevant/Interference condition.
 
----
+M: Music/Mixed condition.
 
-**End of Documentation**
+Environments
+
+Cafe: Simulates a noisy, public environment.
+
+
+Classroom: Represents a standard, quiet academic setting.
+
+Technical Parameters
+MAX_TRIAL_ID = 30: The cutoff for valid trials included in accuracy calculations.
+
+INTRESED_LEVEL_QUASTION = 7777: The unique Question ID used to query the user's subjective interest level.
+
+BASE_DIR: Dynamically calculates the project root path to ensure the code runs on any machine without path errors.
+
+
+
+
+
+
+## Output File Reference - for your convinience!!
+
+### Accuracy Files
+- `results_output_for_accuracy_Cafe.xlsx` - Cafe environment accuracy data
+- `results_output_for_accuracy_Classroom.xlsx` - Classroom environment accuracy data
+- `results_output_for_accuracy_all.xlsx` - Complete accuracy statistics (Mean, SD, Median)
+
+### Interest Level Files
+- `results_output_for_intrestLVL_cafe.xlsx` - Cafe environment interest data
+- `results_output_for_intrestLVL_classroom.xlsx` - Classroom environment interest data
+- `results_output_for_intrestLVL_all.xlsx` - Complete interest statistics
+
+### Master Data File
+- `data_peleg.xlsx` - Aggregated dataset combining all metrics
+
+### Statistical Analysis
+- `ttest_accuracy_results.xlsx` - Accuracy t-test results
+- `ttest_interest_results.xlsx` - Interest t-test results
+- `ttest_summary_all.xlsx` - Combined statistical summary
+
+### Visualizations
+**Accuracy Charts:**
+- slope_graph_accuracy.png
+- accuracy_by_environment.png
+- accuracy_by_session.png
+- accuracy_by_condition.png
+- accuracy_histogram.png
+- condition_and_environment.png
+
+**Interest Level Charts:**
+- interest_by_condition_and_environment.png
+- interest_histogram.png
+- interest_slope_bar.png
+- interest_by_group.png
+- interest_by_session.png
+

@@ -5,20 +5,23 @@ import numpy as np
 import matplotlib.pyplot as plt
 import os
 from pathlib import Path
-
+# Get the base directory (where the script is located)
+BASE_DIR = Path(__file__).parent
 try:
     from config import *
 except ImportError:
-    # Default paths
-    MAIN_DATA = r"C:\Users\peleg\Desktop\Analysis_Code\Output_Results\data_peleg.xlsx"
-    ACCURACY_CAFE_OUTPUT = r"C:\Users\peleg\Desktop\Analysis_Code\Output_Results\accuracy\results_output_for_accuracy_Cafe.xlsx"
-    ACCURACY_CLASSROOM_OUTPUT = r"C:\Users\peleg\Desktop\Analysis_Code\Output_Results\accuracy\results_output_for_accuracy_Classroom.xlsx"
-    INTEREST_CAFE_OUTPUT = r"C:\Users\peleg\Desktop\Analysis_Code\Output_Results\interestlvl\results_output_for_intrestLVL_cafe.xlsx"
-    INTEREST_CLASSROOM_OUTPUT = r"C:\Users\peleg\Desktop\Analysis_Code\Output_Results\interestlvl\results_output_for_intrestLVL_classroom.xlsx"
-    OUTPUT_DIR_VISUALIZATION = r"C:\Users\peleg\Desktop\Analysis_Code\Output_Results\Visualization"
+    # Default paths - relative to script location
+    MAIN_DATA = BASE_DIR / "Output_Results" / "data_peleg.xlsx"
+    ACCURACY_CAFE_OUTPUT = BASE_DIR / "Output_Results" / "accuracy" / "results_output_for_accuracy_Cafe.xlsx"
+    ACCURACY_CLASSROOM_OUTPUT = BASE_DIR / "Output_Results" / "accuracy" / "results_output_for_accuracy_Classroom.xlsx"
+    INTEREST_CAFE_OUTPUT = BASE_DIR / "Output_Results" / "interestlvl" / "results_output_for_intrestLVL_cafe.xlsx"
+    INTEREST_CLASSROOM_OUTPUT = BASE_DIR / "Output_Results" / "interestlvl" / "results_output_for_intrestLVL_classroom.xlsx"
+    OUTPUT_DIR_VISUALIZATION = BASE_DIR / "Output_Results" / "Visualization"
 
-#output:
-os.makedirs(OUTPUT_DIR_VISUALIZATION, exist_ok=True)
+# Create output directory - works with Path objects
+OUTPUT_DIR_VISUALIZATION = Path(OUTPUT_DIR_VISUALIZATION)
+OUTPUT_DIR_VISUALIZATION.mkdir(parents=True, exist_ok=True)
+
 
 def load_all_data():
     #Load all processed data files
@@ -927,7 +930,7 @@ def create_all_visualizations():
     
     slope_graph_accuracy(
         data['accuracy_all'],
-        os.path.join(OUTPUT_DIR, 'slope_graph_accuracy.png')
+        OUTPUT_DIR_VISUALIZATION / 'slope_graph_accuracy.png'
     )
     
     comparison_bar_chart(
@@ -938,28 +941,28 @@ def create_all_visualizations():
     
     comparison_bar_chart(
         data['accuracy_all'],
-        'group',
-        os.path.join(OUTPUT_DIR_VISUALIZATION, 'accuracy_by_group.png')
+        'environment',
+        OUTPUT_DIR_VISUALIZATION / 'accuracy_by_environment.png'
     )
     
     comparison_bar_chart(
         data['accuracy_all'],
         'session',
-        os.path.join(OUTPUT_DIR_VISUALIZATION, 'accuracy_by_session.png')
+        OUTPUT_DIR_VISUALIZATION / 'accuracy_by_session.png'
     )
     
     comparison_acc_by_condition(
         data['accuracy_all'],
-        os.path.join(OUTPUT_DIR_VISUALIZATION, 'accuracy_by_condition.png')
+        OUTPUT_DIR_VISUALIZATION / 'accuracy_by_condition.png'
     )
     
     histogram_acc_by_environment(
         data['accuracy_all'],
-        os.path.join(OUTPUT_DIR_VISUALIZATION, 'accuracy_histogram.png')
+        OUTPUT_DIR_VISUALIZATION / 'accuracy_histogram.png'
     )
     
     comparison_acc_by_condition_and_environment(data['accuracy_all'],
-    os.path.join(OUTPUT_DIR_VISUALIZATION, 'condition_and_environment.png'))
+    OUTPUT_DIR_VISUALIZATION / 'condition_and_environment.png')
     
     
     
@@ -968,25 +971,48 @@ def create_all_visualizations():
     
 
     comparison_interest_by_condition_and_environment(data['interest_all'],
-        os.path.join(OUTPUT_DIR_VISUALIZATION, 'interest_by_condition_and_environment.png')) 
+        OUTPUT_DIR_VISUALIZATION / 'interest_by_condition_and_environment.png') 
         
         
     histogram_interest_by_environment(data['interest_all'],
-        os.path.join(OUTPUT_DIR_VISUALIZATION, 'interest_histogram.png'))
-    
+        OUTPUT_DIR_VISUALIZATION / 'interest_histogram.png')
+
     slope_graph_interest_level(data['interest_all'],    
-        os.path.join(OUTPUT_DIR_VISUALIZATION, 'interest_slope_bar.png'))
+        OUTPUT_DIR_VISUALIZATION / 'interest_slope_bar.png')
     
     comparison_interest_by_group(data['interest_all'],
-        os.path.join(OUTPUT_DIR_VISUALIZATION, 'interest_by_group.png'))
+        OUTPUT_DIR_VISUALIZATION / 'interest_by_group.png')
    
     comparison_interest_by_session(data['interest_all'],
-        os.path.join(OUTPUT_DIR_VISUALIZATION, 'interest_by_session.png'))
+        OUTPUT_DIR_VISUALIZATION / 'interest_by_session.png')
    
     
-    print("\n" + "="*80)
-    print(" ALL VISUALIZATIONS CREATED SUCCESSFULLY!")
     print(f" Saved to: {OUTPUT_DIR_VISUALIZATION}")
+
+
+#  Tests 
+def test_slope_graph_accuracy_creates_file(tmp_path):
+    df = pd.DataFrame({
+        'Subject':     [1, 1, 2, 2],
+        'Environment': ['CAFE', 'CLASSROOM', 'CAFE', 'CLASSROOM'],
+        'Accuracy':    [80, 85, 70, 75],
+        'Group':       [0, 0, 1, 1],
+    })
+    out = tmp_path / "test_slope.png"
+    slope_graph_accuracy(df, out)
+    assert out.exists()
+
+
+def test_comparison_acc_by_condition_and_environment_creates_file(tmp_path):
+    df = pd.DataFrame({
+        'Subject':     [1, 1, 1, 1, 1, 1],
+        'Environment': ['CAFE', 'CAFE', 'CAFE', 'CLASSROOM', 'CLASSROOM', 'CLASSROOM'],
+        'Condition':   ['R', 'IR', 'M', 'R', 'IR', 'M'],
+        'Accuracy':    [80, 75, 70, 85, 78, 72],
+    })
+    out = tmp_path / "test_bar.png"
+    comparison_acc_by_condition_and_environment(df, out)
+    assert out.exists()
 
 
 if __name__ == "__main__":

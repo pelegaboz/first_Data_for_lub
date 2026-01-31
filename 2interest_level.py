@@ -2,14 +2,16 @@
 Interest Level Analysis
 Analyzes interest levels of participants across different conditions and environments
 """
-from typing import Any
-from scipy import stats
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import glob
 import os
 import re
+from pathlib import Path
+# Get the base directory (where the script is located)
+BASE_DIR = Path(__file__).parent
+
 
 
 # CONFIGURATION - Import from config file
@@ -27,13 +29,11 @@ except ImportError:
     NUMBER_RETEST = 2
     INTRESED_LEVEL_QUASTION = 7777
     MAX_TRIAL_ID = 30
-    # Paths
-    CAFE_DATA_PATH = r"C:\Users\peleg\Desktop\Lub\assignment_log_cafe.csv"
-    CLASSROOM_DATA_PATH = r"C:\Users\peleg\Desktop\Lub\assignment_log_classroom.csv"
-    DATA_PATH_ADHD = r"C:\Users\peleg\Desktop\Lub\ADHD_group.xlsx"
-    DATA_PATH = r"C:\Users\peleg\Desktop\Lub\All_Answers"
-
-
+    # Paths - relative to script location
+    CAFE_DATA_PATH = BASE_DIR / "Input_Data" / "assignment_log_cafe.csv"
+    CLASSROOM_DATA_PATH = BASE_DIR / "Input_Data" / "assignment_log_classroom.csv"
+    DATA_PATH_ADHD = BASE_DIR / "Input_Data" / "ADHD_group.xlsx"
+    DATA_PATH = BASE_DIR / "Input_Data" / "All_Answers"
 def load_metadata_files(cafe_log_path: str, classroom_log_path: str):
     """Load metadata files for both environments"""
     return {
@@ -410,21 +410,41 @@ def main():
     cafe_df = results_For_one_envi("cafe")
     cafe_output_path = r"C:\Users\peleg\Desktop\Analysis_Code\Output_Results\interestlvl\results_output_for_intrestLVL_cafe.xlsx"
     cafe_df.to_excel(cafe_output_path, index=False)
-    print(f"✓ Cafe data saved to: {cafe_output_path}")
+    print(f" Cafe data saved to: {cafe_output_path}")
 
     # create Classroom's files
     print("\nCreating Classroom data...")
     classroom_df = results_For_one_envi("classroom")
     classroom_output_path = r"C:\Users\peleg\Desktop\Analysis_Code\Output_Results\interestlvl\results_output_for_intrestLVL_classroom.xlsx"
     classroom_df.to_excel(classroom_output_path, index=False)
-    print(f"✓ Classroom data saved to: {classroom_output_path}")
-
+    print(f"Classroom data saved to: {classroom_output_path}")
 
     # create complete table
     stats_output_path = r"C:\Users\peleg\Desktop\Analysis_Code\Output_Results\interestlvl\results_output_for_intrestLVL_all.xlsx"
     stats_df = calculate_std_per_subject_from_raw_data(stats_output_path)
     print(" All analyses completed!")
 
+
+#  Tests 
+def test_interest_level_for_one_question():
+    df = pd.DataFrame({
+        'TrialID':           [5],
+        'QuestionID':        [7777],
+        'ReportedAnswer2':   [False],
+        'ReportedAnswer3':   [False],
+        'ReportedAnswer4':   [True],
+        'ReportedAnswer5':   [False],
+        'ReportedAnswer6':   [False],
+        'ReportedAnswer7':   [False],
+        'ReportedAnswer8':   [False],
+    })
+    assert interest_level_for_one_question(5, df) == 3
+
+    assert interest_level_for_one_question(99, df) == 0
+
+    df_no_true = df.copy()
+    df_no_true['ReportedAnswer4'] = False
+    assert interest_level_for_one_question(5, df_no_true) == 0
 
 if __name__ == "__main__":
     main()

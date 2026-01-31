@@ -4,20 +4,17 @@
 
 import pandas as pd
 import numpy as np
-import matplotlib.pyplot as plt
 import glob
 import os
 import re
-from scipy import stats
 from pathlib import Path
-from typing import Tuple, Optional, Dict
-
-classroom_output_path = r"C:\Users\peleg\Desktop\Analysis_Code\Output_Results\accuracy\results_output_for_accuracy_Classroom.xlsx"
-cafe_output_path = r"C:\Users\peleg\Desktop\Analysis_Code\Output_Results\accuracy\results_output_for_accuracy_Cafe.xlsx"    
-output_path = r"C:\Users\peleg\Desktop\Lub\comparison_cafe_vs_classroom.png"
-stats_output_path = r"C:\Users\peleg\Desktop\Analysis_Code\Output_Results\accuracy\results_output_for_accuracy_all.xlsx"
-CONDITION_FILE_PATH = r"C:\Users\peleg\Desktop\Analysis_Code\Input_Data\assignment_log.csv"
-
+from pathlib import Path
+BASE_DIR = Path(__file__).parent
+classroom_output_path = BASE_DIR / "Output_Results" / "accuracy" / "results_output_for_accuracy_Classroom.xlsx"
+cafe_output_path = BASE_DIR / "Output_Results" / "accuracy" / "results_output_for_accuracy_Cafe.xlsx"
+output_path = BASE_DIR / "Output_Results" / "comparison_cafe_vs_classroom.png"
+stats_output_path = BASE_DIR / "Output_Results" / "accuracy" / "results_output_for_accuracy_all.xlsx"
+CONDITION_FILE_PATH = BASE_DIR / "Input_Data" / "assignment_log.csv"
 # CONSTANTS
 ADHD = 0
 Control = 1
@@ -34,13 +31,12 @@ try:
     print(" Configuration loaded successfully")
 except ImportError:
     print(" Warning: config.py not found, using default paths")
-    # Keep original paths as fallback
-    CAFE_DATA_PATH = r"C:\Users\peleg\Desktop\Lub\assignment_log_cafe.csv"
-    CLASSROOM_DATA_PATH = r"C:\Users\peleg\Desktop\Lub\assignment_log_classroom.csv"
-    DATA_PATH_ADHD = r"C:\Users\peleg\Desktop\Lub\ADHD_group.xlsx"
-    DATA_PATH = r"C:\Users\peleg\Desktop\Lub\All_Answers"
-    OUTPUT_DIR = r"C:\Users\peleg\Desktop\Lub\Accuracy_Analysis"
-
+    # Keep relative paths as fallback
+    CAFE_DATA_PATH = BASE_DIR / "Input_Data" / "assignment_log_cafe.csv"
+    CLASSROOM_DATA_PATH = BASE_DIR / "Input_Data" / "assignment_log_classroom.csv"
+    DATA_PATH_ADHD = BASE_DIR / "Input_Data" / "ADHD_group.xlsx"
+    DATA_PATH = BASE_DIR / "Input_Data" / "All_Answers"
+    OUTPUT_DIR = BASE_DIR / "Output_Results" / "accuracy"
 # UTILITY FUNCTIONS
 
 def load_metadata_files(cafe_log_path: str, classroom_log_path: str) -> dict:
@@ -203,64 +199,6 @@ def calculate_avg_accuracy_for_condition(filtered_df: pd.DataFrame,
     return calculate_accuracy_for_trials(filtered_df, condition_trials)
 
 # MAIN PROCESSING FUNCTIONS
-
-    # Running all the files and returning the aggregated data
-    all_results = []
-    metadata = load_metadata_files(CAFE_DATA_PATH, CLASSROOM_DATA_PATH)
-
-    condition_map = load_condition_mapping(CONDITION_FILE_PATH)
-
-    if not condition_map:
-        print("ERROR: Condition map is empty!")
-        return pd.DataFrame()
-
-    # Collect all files to process
-    xlsx_files = glob.glob(os.path.join(DATA_PATH, '*.xlsx'))
-    csv_files = glob.glob(os.path.join(DATA_PATH, '*.csv'))
-    all_files_to_process = xlsx_files + csv_files
-
-    # Process each file
-    for file in all_files_to_process:
-        subject_number = extract_subject_number(file)
-        session = test_or_retest(file)
-        condition_str = condition_map.get((subject_number, session))
-
-        if condition_str is None:
-            continue
-
-        which_envi = identify_envi(subject_number, session, metadata)
-        is_adhd = identify_ADHD_or_Control(subject_number)
-
-        raw_df = load_file(file)
-        if raw_df is None:
-            continue
-
-        filtered_df = filtered_data_frame_for_accuracy(raw_df)
-
-        if filtered_df.empty:
-            continue
-
-        # Calculate accuracy for each condition type
-        for condition_type in ['R', 'IR', 'M']:
-            avg_accuracy = calculate_avg_accuracy_for_condition(
-                filtered_df, condition_str, condition_type
-            )
-
-            all_results.append({
-                'Subject': subject_number,
-                'Session': session,
-                'Environment': which_envi,
-                'Group': is_adhd,
-                'Condition': condition_type,
-                'Condition_Sequence': condition_str,
-                'Accuracy': avg_accuracy
-            })
-
-    if not all_results:
-        print("ERROR: No results generated!")
-        return pd.DataFrame()
-
-    return pd.DataFrame(all_results)
 
 def results_for_one_env(which_envi: str) -> pd.DataFrame:
     #Process and return results for a specific environment (cafe or classroom)
@@ -475,6 +413,26 @@ def main():
     combiend_df= pd.concat([cafe_df, classroom_df],ignore_index=True)
     stats_df = calculate_std_per_subject_from_raw_data(stats_output_path)
 
+
+
+
+#Tests 
+def test_parse_condition_sequence():
+    assert parse_condition_sequence("RIM") == ("R", "I", "M")
+    assert parse_condition_sequence("RIRM") == ("R", "IR", "M")
+    assert parse_condition_sequence("MIRR") == ("M", "IR", "R")
+    assert parse_condition_sequence("RI") == (None, None, None)
+
+
+def test_identify_condition_for_trial():
+    assert identify_condition_for_trial("RIRM", 1) == "R"
+    assert identify_condition_for_trial("RIRM", 10) == "R"
+    assert identify_condition_for_trial("RIRM", 11) == "IR"
+    assert identify_condition_for_trial("RIRM", 20) == "IR"
+    assert identify_condition_for_trial("RIRM", 21) == "M"
+    assert identify_condition_for_trial("RIRM", 30) == "M"
+    assert identify_condition_for_trial("RIRM", 0) is None
+    assert identify_condition_for_trial("RIRM", 31) is None
 
 if __name__== "__main__":
     main()
